@@ -4,7 +4,7 @@
 void* DxHook::vTable[119];
 Output* DxHook::out;
 Render DxHook::r;
-Hook DxHook::h;
+Hook* DxHook::h;
 
 
 BOOL CALLBACK EnumWindowsCallback(HWND handle, LPARAM lParam) {
@@ -70,31 +70,28 @@ bool DxHook::getVTable() {
 
 bool DxHook::hookEndScene() {
 	out->printReg("Hooking EndScene...");
-	char s[100];
-	sprintf_s(s, "%p", h.trampoline);
-	out->printReg(std::string(s));
-	h.setPos((DWORD)vTable[42]);
-	h.setLen(7);
-	h.setFunc((DWORD)DxHook::startRender);
-	return h.install();
+	h = new Hook(DWORD(vTable[42]), 7, DWORD(DxHook::startRender));
+	bool ret = h->install();
+	if (!ret) delete h;
+	return ret;
 }
 
 
 bool DxHook::hookBeginScene() {
 	out->printReg("Failed to hook EndScene, trying to hook BeginScene...");
-	h.setPos((DWORD)vTable[41]);
-	h.setLen(7);
-	h.setFunc((DWORD)DxHook::startRender);
-	return h.install();
+	h = new Hook(DWORD(vTable[41]), 7, DWORD(DxHook::startRender));
+	bool ret = h->install();
+	if (!ret) delete h;
+	return ret;
 }
 
 
 bool DxHook::hookPresent() {
 	out->printReg("Failed to hook BeginScene, trying to hook Present...");
-	h.setPos((DWORD)vTable[17]);
-	h.setLen(5);
-	h.setFunc((DWORD)DxHook::startRender);
-	return h.install();
+	h = new Hook(DWORD(vTable[17]), 5, DWORD(DxHook::startRender));
+	bool ret = h->install();
+	if (!ret) delete h;
+	return ret;
 }
 
 
@@ -105,7 +102,7 @@ bool DxHook::getDxObj() {
 
 bool DxHook::startRender() {
 	out->printReg("Rendered");
-	h.trampoline();
+	h->trampoline();
 	return true;
 }
 
